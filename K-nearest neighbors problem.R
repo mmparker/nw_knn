@@ -43,50 +43,11 @@ head(breastcancer$geneid)   #  Affymentrix IDs?
 #  dataset used for classification.  This is generally bad practice as it is likely 
 #  to be overfitted and perform poorly when used on new datasets
 
+source("make_dist.r")
+source("nw_knn.r")
 
-make.dist <- function(DATA, METHOD) {
-  as.matrix(dist(t(DATA),   #  to get the distance matrix
-                 #  we have to transpose the expression matrix
-                 #  to get genes in columns and then apply 
-                 #  the distance function with selected method
-                 method = METHOD))    #  46 x 46 matrix
-}
+KNN.class <- nw_knn(x = breastcancer$x, true.class = breastcancer$y, k = 7)
 
-
-#  the METHOD could also be set as"maximum", "manhattan", "canberra", "binary" 
-#or "minkowski"
-Dist.matrix <- make.dist(breastcancer$x, "euclidean")
-
-k <- 8   # this is setting the K value for voting  it is best to use even k to avoid ties!
-M <- NULL
-N <- NULL
-O <- NULL
-P <- NULL
-Q <- NULL
-R <- NULL
-S <- NULL
-T <- NULL
-KNN.class <- NULL
-
-for (i in 1:46) {   #  for each distance metric
-  #  STEP 2 - identify the k profiles closest to sample i.  The smallest distance (zero)
-  #  is always going to be the sample i.  This line identifies the the 2nd 
-  #  through kth value in each distance vector
-  M <- Dist.matrix[i, order(Dist.matrix[,i])[2:(k+1)]]  
-  #  some housekeeping
-  N <- labels(M)  #  this gives a series of 3 labels "V3" or "V19"        
-  O <- substring(N, 2,3)  #  this strips off the "V", leaving only a number 
-  #  (but in character format)
-  P <- as.integer(O)   #  this convert the character value to an integer 
-  # so that we can use it to extract class info      
-  R <- breastcancer$y[P]   # this gives the class labels for the k nearest neighbors, 
-  # ie [1] "ER+" "ER+" "ER+"
-  S <- sum(R == "ER+")     #  determines many of the nearest neighbors are ER+
-  T[S/k >.5] <- "ER+"     #  if >50% of nearest neighbors are ER+ makes T "ER+"
-  T[S/k <.5] <- "ER-"      #  if <50% of nearest neighbors are ER+ makes T "ER-"
-  #  T[S/k == .5] <- "TIE" 
-  KNN.class <- c(KNN.class, T)  # A vector of "predicted ER+/ER- class labels
-}
 
 ##  Part B
 # Apply your function to the data and plot the error rate for different values of k
